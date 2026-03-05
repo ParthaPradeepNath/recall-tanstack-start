@@ -1,25 +1,27 @@
-import { Button } from "#/components/ui/button"
+import { Button } from '#/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "#/components/ui/card"
+} from '#/components/ui/card'
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "#/components/ui/field"
-import { Input } from "#/components/ui/input"
-import { Link } from "@tanstack/react-router"
-import { useForm } from "@tanstack/react-form"
-import { signupSchema } from "#/schemas/auth"
-
+} from '#/components/ui/field'
+import { Input } from '#/components/ui/input'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useForm } from '@tanstack/react-form'
+import { signupSchema } from '#/schemas/auth'
+import { authClient } from '#/lib/auth-client'
+import { toast } from 'sonner'
 
 export function SignupForm() {
+  const navigate = useNavigate();
   const form = useForm({
     defaultValues: {
       fullName: '',
@@ -30,7 +32,23 @@ export function SignupForm() {
       onSubmit: signupSchema,
     },
     onSubmit: async ({ value }) => {
-      console.log(value)
+      await authClient.signUp.email({
+        name: value.fullName,
+        email: value.email,
+        password: value.password,
+        callbackURL: '/dashboard',
+        fetchOptions: {
+          onSuccess: () => {
+            toast.success('Account created successfully')
+            navigate({
+              to: '/',
+            })
+          },
+          onError: ({ error }) => {
+            toast.error(error.message)
+          },
+        },
+      })
     },
   })
 
@@ -44,7 +62,7 @@ export function SignupForm() {
       </CardHeader>
       <CardContent>
         <form
-        onSubmit={(e) => {
+          onSubmit={(e) => {
             e.preventDefault()
             form.handleSubmit()
           }}
@@ -133,7 +151,7 @@ export function SignupForm() {
                 )
               }}
             />
-            
+
             <FieldGroup>
               <Field>
                 <Button type="submit">Create Account</Button>
