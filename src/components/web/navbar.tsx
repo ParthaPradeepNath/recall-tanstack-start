@@ -19,6 +19,7 @@ export function Navbar() {
         }
     })
   }
+  
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -36,7 +37,7 @@ export function Navbar() {
           {isPending ? null : session ? (
             <>
             <Button onClick={handleSignOut} variant="secondary">Logout</Button>
-            <Link to='/' className={buttonVariants()}>Dashboard</Link>
+            <Link to='/dashboard' className={buttonVariants()}>Dashboard</Link>
             </>
           ) : (
             <>
