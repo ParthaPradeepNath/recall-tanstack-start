@@ -202,3 +202,40 @@ Files prefixed with `demo` can be safely deleted. They are there to provide a st
 You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
 
 For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+
+# ETL Pipeline with LLMs: Automated Blog Summarizer
+
+This repository contains an automated ETL (Extract, Transform, Load) pipeline powered by Large Language Models (LLMs). The project takes a blog article URL, extracts its text, formats and stores the data, and finally leverages AI to generate a concise summary.
+
+## Pipeline Architecture
+
+The following flowchart illustrates the step-by-step data journey through the system:
+
+![ETL Pipeline Architecture]
+*(Note: Replace `./path-to-your-image.jpg` with the actual file path of your image in your repository)*
+
+## Workflow Explanation
+
+The system is designed to be seamless and operates in four main stages:
+
+### 1. User Input (`Form`)
+* **The Process:** The workflow begins when a user **gives you a URL (via a form)**. 
+* **Details:** This acts as the trigger for the entire pipeline, providing the exact web address of the target blog article.
+
+### 2. Extract (`Scrape` -> `Blog Article`)
+* **The Process:** The system takes the provided URL and runs a script to **scrape a blog article**.
+* **Details:** It navigates to the webpage and extracts the core textual content, separating the actual article from the website's navigation, ads, and other irrelevant boilerplate.
+
+### 3. Transform & Load (`Markdown` -> `DB`)
+* **The Process:** The scraped content is transformed into **Markdown** and we then **store it in a database**.
+* **Details:** Converting the raw text into Markdown ensures the data is cleanly formatted and standardized. This structured data is then loaded into a database (DB) for reliable storage and future retrieval.
+
+### 4. AI Processing (`Summarize (AI)` -> `Item`)
+* **The Process:** An AI model fetches the stored content and will **summarize it into a smaller "Item"**.
+* **Details:** The LLM analyzes the full-length Markdown article and distills it down to its most important points, outputting a compact, easy-to-read summary item.
+
+---
+
+## Getting Started
+
+*(Add your installation instructions, prerequisites, and how to run the project locally here)*
