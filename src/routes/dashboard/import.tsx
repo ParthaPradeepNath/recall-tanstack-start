@@ -14,6 +14,7 @@ import {
 } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { scrapeUrlFn } from '#/data/items'
 import { bulkImportSchema, importSchema } from '#/schemas/import'
 import { useForm } from '@tanstack/react-form'
 import { createFileRoute } from '@tanstack/react-router'
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/dashboard/import')({
 function RouteComponent() {
   const [isPending, startTransition] = useTransition()
 
+  // SINGLE IMPORT FORM
   const form = useForm({
     defaultValues: {
       url: '',
@@ -36,11 +38,13 @@ function RouteComponent() {
     },
     onSubmit: ({ value }) => {
       startTransition(async () => {
-        console.log(value)
+        // console.log(value)
+        await scrapeUrlFn({ data: value })
       })
     },
   })
 
+  // BULK IMPORT FORM
   const bulkForm = useForm({
     defaultValues: {
       url: '',
@@ -51,7 +55,8 @@ function RouteComponent() {
     },
     onSubmit: ({ value }) => {
       startTransition(async () => {
-        console.log(value)
+        // console.log(value)
+        await scrapeUrlFn({ data: value })
       })
     },
   })
@@ -68,24 +73,27 @@ function RouteComponent() {
 
         <Tabs defaultValue="single">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="single">
+            <TabsTrigger value="single" className="gap-2">
               <LinkIcon className="size-4" />
               Single URL
             </TabsTrigger>
+
             <TabsTrigger value="bulk" className="gap-2">
               <Globe className="size-4" />
               Bulk Import
             </TabsTrigger>
           </TabsList>
 
+          {/* SINGLE IMPORT */}
           <TabsContent value="single">
             <Card>
               <CardHeader>
-                <CardTitle>Import Single Url</CardTitle>
+                <CardTitle>Import Single URL</CardTitle>
                 <CardDescription>
-                  Scrape and save content from any web app!
+                  Scrape and save content from any web page!
                 </CardDescription>
               </CardHeader>
+
               <CardContent>
                 <form
                   onSubmit={(e) => {
@@ -100,9 +108,11 @@ function RouteComponent() {
                         const isInvalid =
                           field.state.meta.isTouched &&
                           !field.state.meta.isValid
+
                         return (
                           <Field data-invalid={isInvalid}>
                             <FieldLabel htmlFor={field.name}>URL</FieldLabel>
+
                             <Input
                               id={field.name}
                               name={field.name}
@@ -115,6 +125,7 @@ function RouteComponent() {
                               placeholder="https://tanstack.com/start/latest"
                               autoComplete="off"
                             />
+
                             {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                             )}
@@ -123,11 +134,11 @@ function RouteComponent() {
                       }}
                     />
 
-                    <Button type='submit' disabled={isPending}>
+                    <Button type="submit" disabled={isPending}>
                       {isPending ? (
                         <>
-                          <Loader2 className='size-4 animate-spin' />
-                          "Processing..."
+                          <Loader2 className="size-4 animate-spin" />
+                          Processing...
                         </>
                       ) : (
                         'Import URL'
@@ -139,14 +150,16 @@ function RouteComponent() {
             </Card>
           </TabsContent>
 
+          {/* BULK IMPORT */}
           <TabsContent value="bulk">
             <Card>
               <CardHeader>
                 <CardTitle>Bulk Import</CardTitle>
                 <CardDescription>
-                  Discover and import mmultiple URLs from a website at once
+                  Discover and import multiple URLs from a website at once
                 </CardDescription>
               </CardHeader>
+
               <CardContent>
                 <form
                   onSubmit={(e) => {
@@ -161,9 +174,11 @@ function RouteComponent() {
                         const isInvalid =
                           field.state.meta.isTouched &&
                           !field.state.meta.isValid
+
                         return (
                           <Field data-invalid={isInvalid}>
                             <FieldLabel htmlFor={field.name}>URL</FieldLabel>
+
                             <Input
                               id={field.name}
                               name={field.name}
@@ -173,9 +188,10 @@ function RouteComponent() {
                                 field.handleChange(e.target.value)
                               }
                               aria-invalid={isInvalid}
-                              placeholder="https://tanstack.com/start/latest"
+                              placeholder="https://tanstack.com"
                               autoComplete="off"
                             />
+
                             {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                             )}
@@ -190,9 +206,13 @@ function RouteComponent() {
                         const isInvalid =
                           field.state.meta.isTouched &&
                           !field.state.meta.isValid
+
                         return (
                           <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>Filter (optional)</FieldLabel>
+                            <FieldLabel htmlFor={field.name}>
+                              Filter (optional)
+                            </FieldLabel>
+
                             <Input
                               id={field.name}
                               name={field.name}
@@ -202,9 +222,10 @@ function RouteComponent() {
                                 field.handleChange(e.target.value)
                               }
                               aria-invalid={isInvalid}
-                              placeholder="e.g. Blog, docs, tutorial"
+                              placeholder="e.g. blog, docs, tutorial"
                               autoComplete="off"
                             />
+
                             {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                             )}
@@ -213,11 +234,11 @@ function RouteComponent() {
                       }}
                     />
 
-                    <Button type='submit' disabled={isPending}>
+                    <Button type="submit" disabled={isPending}>
                       {isPending ? (
                         <>
-                          <Loader2 className='size-4 animate-spin' />
-                          "Processing..."
+                          <Loader2 className="size-4 animate-spin" />
+                          Processing...
                         </>
                       ) : (
                         'Import URLs'

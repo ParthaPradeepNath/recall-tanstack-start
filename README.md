@@ -239,3 +239,5 @@ The system is designed to be seamless and operates in four main stages:
 ## Getting Started
 
 *(Add your installation instructions, prerequisites, and how to run the project locally here)*
+
+"zod": "^4.3.6"
