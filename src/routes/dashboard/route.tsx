@@ -4,7 +4,7 @@ import { AppSidebar } from '#/components/web/app-sidebar'
 import { getSessionFn } from '#/data/session'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-
+// so this route does not authenticate the user hardly means on the server side you just get the useSession not that the user is authenticated, so use a global middleware
 export const Route = createFileRoute('/dashboard')({
   component: RouteComponent,
   loader: async () => {

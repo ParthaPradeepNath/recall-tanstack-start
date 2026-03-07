@@ -3,18 +3,18 @@ import { firecrawl } from '#/lib/firecrawl'
 import { extractSchema, importSchema } from '#/schemas/import'
 import { createServerFn } from '@tanstack/react-start'
 import type z from 'zod'
-import { getSessionFn } from './session'
+import { authFnMiddleware } from '#/middlewares/auth'
 
 // Server Function
 export const scrapeUrlFn = createServerFn({ method: 'POST' })
+  .middleware([authFnMiddleware]) // Add an middleware or pass it in array because the we can pass multiple of them to check for different diff things like checking the user for rate limiting , auth etc and also when you add your middleware they get executed in order
   .inputValidator(importSchema)
-  .handler(async ({ data }) => {
-    const user = await getSessionFn()
+  .handler(async ({ data, context }) => {
 
     const item = await prisma.savedItem.create({
       data: {
         url: data.url,
-        userId: user.user.id,
+        userId: context.session.user.id,
         status: 'PROCESSING',
       },
     })
