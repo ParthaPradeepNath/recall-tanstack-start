@@ -50,6 +50,9 @@ importers:
       '@tanstack/router-plugin':
         specifier: ^1.132.0
         version: 1.164.0(@tanstack/react-router@1.163.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@22.19.13)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))
+      '@tanstack/zod-adapter':
+        specifier: ^1.166.2
+        version: 1.166.2(@tanstack/react-router@1.163.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(zod@3.25.76)
       better-auth:
         specifier: ^1.5.3
         version: 1.5.3(f8faf5f6d6e1e267c51c4b77558b3b2e)
@@ -2180,6 +2183,13 @@ packages:
   '@tanstack/virtual-file-routes@1.161.4':
     resolution: {integrity: sha512-42WoRePf8v690qG8yGRe/YOh+oHni9vUaUUfoqlS91U2scd3a5rkLtVsc6b7z60w3RogH0I00vdrC5AaeiZ18w==}
     engines: {node: '>=20.19'}
+
+  '@tanstack/zod-adapter@1.166.2':
+    resolution: {integrity: sha512-Y+i8emDGJ7dhgazagzECeoG6EO3kFkgNOYqUXuimM1qg/luYs225bb4SbrbLiusPWr3DFEdSmW8wkLDV+kpzLA==}
+    engines: {node: '>=20.19'}
+    peerDependencies:
+      '@tanstack/react-router': '>=1.43.2'
+      zod: ^3.23.8
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -7260,6 +7270,11 @@ snapshots:
   '@tanstack/store@0.9.1': {}
 
   '@tanstack/virtual-file-routes@1.161.4': {}
+
+  '@tanstack/zod-adapter@1.166.2(@tanstack/react-router@1.163.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(zod@3.25.76)':
+    dependencies:
+      '@tanstack/react-router': 1.163.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      zod: 3.25.76
 
   '@testing-library/dom@10.4.1':
     dependencies:

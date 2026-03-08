@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { Checkbox } from '#/components/ui/checkbox'
 import {
   Field,
   FieldError,
@@ -14,12 +15,14 @@ import {
 } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import { scrapeUrlFn } from '#/data/items'
+import { bulkScrapeUrlsFn, mapUrlFn, scrapeUrlFn } from '#/data/items'
 import { bulkImportSchema, importSchema } from '#/schemas/import'
+import type { SearchResultWeb } from '@mendable/firecrawl-js'
 import { useForm } from '@tanstack/react-form'
 import { createFileRoute } from '@tanstack/react-router'
 import { Globe, LinkIcon, Loader2 } from 'lucide-react'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/dashboard/import')({
   component: RouteComponent,
@@ -27,36 +30,76 @@ export const Route = createFileRoute('/dashboard/import')({
 
 function RouteComponent() {
   const [isPending, startTransition] = useTransition()
+  const [bulkIsPending, startBulkTransition] = useTransition()
 
-  // SINGLE IMPORT FORM
+  const [discoveredLinks, setDiscoveredLinks] = useState<
+    Array<SearchResultWeb>
+  >([])
+  const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set())
+
+  function handleSelectAll() {
+    if (selectedUrls.size === discoveredLinks.length) {
+      setSelectedUrls(new Set())
+    } else {
+      setSelectedUrls(new Set(discoveredLinks.map((link) => link.url)))
+    }
+  }
+
+  function handleToggleUrl(url: string) {
+    const newSelected = new Set(selectedUrls)
+
+    if (newSelected.has(url)) {
+      newSelected.delete(url)
+    } else {
+      newSelected.add(url)
+    }
+
+    setSelectedUrls(newSelected)
+  }
+
+  function handleBulkImport() {
+    // startTransition(async () => {
+    //   for (const url of selectedUrls) {
+    //     await scrapeUrlFn({ data: { url } })
+    //   }
+    // })
+    startBulkTransition(async () => {
+      if (selectedUrls.size === 0) {
+        toast.error('Please select at least one URL to import')
+        return
+      }
+
+      await bulkScrapeUrlsFn({
+        data: { urls: Array.from(selectedUrls) },
+      })
+
+      toast.success(`Successfully imported ${selectedUrls.size} URLs`)
+    })
+  }
+
   const form = useForm({
-    defaultValues: {
-      url: '',
-    },
-    validators: {
-      onSubmit: importSchema,
-    },
+    defaultValues: { url: '' },
+    validators: { onSubmit: importSchema },
     onSubmit: ({ value }) => {
       startTransition(async () => {
-        // console.log(value)
         await scrapeUrlFn({ data: value })
       })
     },
   })
 
-  // BULK IMPORT FORM
   const bulkForm = useForm({
-    defaultValues: {
-      url: '',
-      search: '',
-    },
-    validators: {
-      onSubmit: bulkImportSchema,
-    },
+    defaultValues: { url: '', search: '' },
+    validators: { onSubmit: bulkImportSchema },
     onSubmit: ({ value }) => {
       startTransition(async () => {
-        // console.log(value)
-        await scrapeUrlFn({ data: value })
+        setDiscoveredLinks([])
+        setSelectedUrls(new Set())
+
+        const res = await mapUrlFn({ data: value })
+
+        console.log('Discovered links:', res)
+
+        setDiscoveredLinks(res)
       })
     },
   })
@@ -156,11 +199,12 @@ function RouteComponent() {
               <CardHeader>
                 <CardTitle>Bulk Import</CardTitle>
                 <CardDescription>
-                  Discover and import multiple URLs from a website at once
+                  Discover and import multiple URLs from a website
                 </CardDescription>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="space-y-6">
+                {/* BULK FORM */}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault()
@@ -177,7 +221,9 @@ function RouteComponent() {
 
                         return (
                           <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>URL</FieldLabel>
+                            <FieldLabel htmlFor={field.name}>
+                              Website URL
+                            </FieldLabel>
 
                             <Input
                               id={field.name}
@@ -189,7 +235,6 @@ function RouteComponent() {
                               }
                               aria-invalid={isInvalid}
                               placeholder="https://tanstack.com"
-                              autoComplete="off"
                             />
 
                             {isInvalid && (
@@ -202,50 +247,102 @@ function RouteComponent() {
 
                     <bulkForm.Field
                       name="search"
-                      children={(field) => {
-                        const isInvalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid
+                      children={(field) => (
+                        <Field>
+                          <FieldLabel htmlFor={field.name}>
+                            Filter (optional)
+                          </FieldLabel>
 
-                        return (
-                          <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>
-                              Filter (optional)
-                            </FieldLabel>
-
-                            <Input
-                              id={field.name}
-                              name={field.name}
-                              value={field.state.value}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                field.handleChange(e.target.value)
-                              }
-                              aria-invalid={isInvalid}
-                              placeholder="e.g. blog, docs, tutorial"
-                              autoComplete="off"
-                            />
-
-                            {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                            )}
-                          </Field>
-                        )
-                      }}
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="blog, docs, tutorial"
+                          />
+                        </Field>
+                      )}
                     />
 
                     <Button type="submit" disabled={isPending}>
                       {isPending ? (
                         <>
                           <Loader2 className="size-4 animate-spin" />
-                          Processing...
+                          Discover URLs
                         </>
                       ) : (
-                        'Import URLs'
+                        'Discover URLs'
                       )}
                     </Button>
                   </FieldGroup>
                 </form>
+
+                {/* DISCOVERED LINKS */}
+                {discoveredLinks.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        Found {discoveredLinks.length} URLs
+                      </p>
+
+                      <Button
+                        onClick={handleSelectAll}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {selectedUrls.size === discoveredLinks.length
+                          ? 'Deselect All'
+                          : 'Select All'}
+                      </Button>
+                    </div>
+
+                    <div className="max-h-80 space-y-2 overflow-y-auto rounded-md border p-4">
+                      {discoveredLinks.map((link) => (
+                        <label
+                          key={link.url}
+                          className="hover:bg-muted/50 flex cursor-pointer items-start gap-3 rounded-md p-2"
+                        >
+                          <Checkbox
+                            checked={selectedUrls.has(link.url)}
+                            onCheckedChange={() => handleToggleUrl(link.url)}
+                            className="mt-0.5"
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">
+                              {link.title ?? 'No title'}
+                            </p>
+
+                            <p className="text-muted-foreground truncate text-xs">
+                              {link.description ?? 'No description'}
+                            </p>
+
+                            <p className="text-muted-foreground truncate text-xs">
+                              {link.url}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+
+                    <Button
+                      disabled={bulkIsPending}
+                      onClick={handleBulkImport}
+                      className="w-full"
+                      type='button'
+                    >
+                      {bulkIsPending ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        `Import ${selectedUrls.size} URLs`
+                      )}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
