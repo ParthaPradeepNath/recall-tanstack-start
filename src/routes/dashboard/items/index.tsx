@@ -16,8 +16,16 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Copy, Inbox } from 'lucide-react'
 import z from 'zod'
 import { zodValidator } from '@tanstack/zod-adapter'
-import { useEffect, useState } from 'react'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '#/components/ui/empty'
+import { Suspense, use, useEffect, useState } from 'react'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '#/components/ui/empty'
+import { Skeleton } from '#/components/ui/skeleton'
 
 const itemsSearchSchema = z.object({
   q: z.string().default(''),
@@ -28,9 +36,33 @@ type ItemsSearch = z.infer<typeof itemsSearchSchema>
 
 export const Route = createFileRoute('/dashboard/items/')({
   component: RouteComponent,
-  loader: () => getItemsFn(),
+  loader: () => ({ itemsPromise: getItemsFn() }), // we don't await the data here
   validateSearch: zodValidator(itemsSearchSchema),
 })
+
+function ItemsGridSkeleton() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      {[1, 2, 3, 4].map((i) => (
+        <Card key={i} className="overflow-hidden pt-0">
+          <Skeleton className="aspect-video w-full" />
+          <CardHeader className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="size-8 rounded-md" />
+            </div>
+
+            {/* Title */}
+            <Skeleton className="h-6 w-full" />
+
+            {/* Author */}
+            <Skeleton className="h-4 w-40" />
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+  )
+}
 
 function ItemsList({
   q,
@@ -39,10 +71,14 @@ function ItemsList({
 }: {
   q: ItemsSearch['q']
   status: ItemsSearch['status']
-  data: Awaited<ReturnType<typeof getItemsFn>>
+  data: ReturnType<typeof getItemsFn>
 }) {
+  // this hook tell the react that i need the Promise to get resolved
+  const items = use(data)
+
   // Filter items based on search params
-  const filtereditems = data.filter((item) => {
+  const filtereditems = items.filter((item) => {
+    // Filter by search query (matches title or tags)
     const matchesQuery =
       q === '' ||
       item.title?.toLowerCase().includes(q.toLowerCase()) ||
@@ -55,21 +91,28 @@ function ItemsList({
 
   if (filtereditems.length === 0) {
     return (
-      <Empty className='border rounded-lg h-full'>
+      <Empty className="border rounded-lg h-full">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <Inbox className='size-12'/>
+            <Inbox className="size-12" />
           </EmptyMedia>
           <EmptyTitle>
-            {data.length === 0 ? 'No Items saved yet' : 'No matching items found'}
+            {items.length === 0
+              ? 'No Items saved yet'
+              : 'No matching items found'}
           </EmptyTitle>
           <EmptyDescription>
-            {data.length === 0 ? 'Import a Url to get started with saving your content': 'No items match your current search filters'}
+            {items.length === 0
+              ? 'Import a Url to get started with saving your content'
+              : 'No items match your current search filters'}
           </EmptyDescription>
         </EmptyHeader>
-        {data.length === 0 && (
+
+        {items.length === 0 && (
           <EmptyContent>
-            <Link className={buttonVariants()} to='/dashboard/import'>Import URL</Link>
+            <Link className={buttonVariants()} to="/dashboard/import">
+              Import URL
+            </Link>
           </EmptyContent>
         )}
       </Empty>
@@ -83,7 +126,13 @@ function ItemsList({
           key={item.id}
           className="group overflow-hidden transition-all hover:shadow-lg pt-0"
         >
-          <Link to="/dashboard" className="block">
+          <Link
+            to="/dashboard/items/$itemId"
+            params={{
+              itemId: item.id,
+            }}
+            className="block"
+          >
             {item.ogImage && (
               <div className="aspect-video w-full overflow-hidden bg-muted">
                 <img
@@ -103,6 +152,7 @@ function ItemsList({
                 >
                   {item.status.toLowerCase()}
                 </Badge>
+
                 <Button
                   variant="outline"
                   size="icon"
@@ -132,7 +182,7 @@ function ItemsList({
 }
 
 function RouteComponent() {
-  const data = Route.useLoaderData()
+  const { itemsPromise } = Route.useLoaderData()
   const { status, q } = Route.useSearch()
   const [searchInput, setSearchInput] = useState(q)
   const navigate = useNavigate({ from: Route.fullPath })
@@ -141,9 +191,10 @@ function RouteComponent() {
     if (searchInput === q) return
 
     const timeoutId = setTimeout(() => {
-      navigate({ search: (prev) => ({ ...prev, q: searchInput }) })
+      navigate({
+        search: (prev) => ({ ...prev, q: searchInput }),
+      })
     }, 300)
-    // because don't want to do this on every keystroke we want to debounce it means Debouncing a query means waiting for a short delay before sending a request, so that multiple rapid actions don’t trigger many queries.
 
     return () => clearTimeout(timeoutId)
   }, [searchInput, navigate, q])
@@ -157,13 +208,14 @@ function RouteComponent() {
         </p>
       </div>
 
-      {/* Search and filter controls */}
+      {/* Search and filter */}
       <div className="flex gap-4">
         <Input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by title or tags"
         />
+
         <Select
           value={status}
           onValueChange={(value) =>
@@ -178,8 +230,10 @@ function RouteComponent() {
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
+
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
+
             {Object.values(ItemStatus).map((status) => (
               <SelectItem key={status} value={status}>
                 {status.charAt(0) + status.slice(1).toLowerCase()}
@@ -189,7 +243,10 @@ function RouteComponent() {
         </Select>
       </div>
 
-      <ItemsList q={q} status={status} data={data} />
+      {/* before this suspense we render everything except the ItemsList component while the data is loading or suspended */}
+      <Suspense fallback={<ItemsGridSkeleton />}>
+        <ItemsList q={q} status={status} data={itemsPromise} />
+      </Suspense>
     </div>
   )
 }
