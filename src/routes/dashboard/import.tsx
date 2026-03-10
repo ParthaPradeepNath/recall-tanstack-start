@@ -278,7 +278,7 @@ function RouteComponent() {
                   </FieldGroup>
                 </form>
 
-                {/* DISCOVERED LINKS */}
+                {/* DISCOVERED URLs list*/}
                 {discoveredLinks.length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -330,7 +330,7 @@ function RouteComponent() {
                       disabled={bulkIsPending}
                       onClick={handleBulkImport}
                       className="w-full"
-                      type='button'
+                      type="button"
                     >
                       {bulkIsPending ? (
                         <>

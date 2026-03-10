@@ -67,6 +67,7 @@ function RouteComponent() {
       })
 
       toast.success('Summary generated and saved!')
+      // invalidating/re-validating all of the queries and re-fetch the data in the background & with that we get the new data (because initiallly it cacche the data so need to invalidate for new content to be generated)
       router.invalidate()
     },
     onError: (error) => {
@@ -74,14 +75,14 @@ function RouteComponent() {
     },
   })
 
-  function handleGenerateSummary () {
-  if (!data.content) {
-    toast.error('No content avaiable to summary')
-    return 
-  }
+  function handleGenerateSummary() {
+    if (!data.content) {
+      toast.error('No content avaiable to summary')
+      return
+    }
 
-  complete(data.content)
-}
+    complete(data.content)
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 w-full">
@@ -97,15 +98,16 @@ function RouteComponent() {
         </Link>
       </div>
 
-      {data.ogImage && (
-        <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
-          <img
-            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-            src={data.ogImage}
-            alt={data.title ?? 'Article Thumbnail'}
-          />
-        </div>
-      )}
+      <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+        <img
+          className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+          src={
+            data.ogImage ??
+            'https://images.unsplash.com/photo-1635776062360-af423602aff3?q=80&w=3132&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+          }
+          alt={data.title ?? 'Article Thumbnail'}
+        />
+      </div>
 
       <div className="space-y-3">
         <h1 className="text-3xl font-bold tracking-tight">
@@ -172,15 +174,19 @@ function RouteComponent() {
               </div>
 
               {data.content && !data.summary && (
-                <Button onClick={handleGenerateSummary} disabled={isLoading} size="sm">
+                <Button
+                  onClick={handleGenerateSummary}
+                  disabled={isLoading}
+                  size="sm"
+                >
                   {isLoading ? (
                     <>
-                    <Loader2 className='size-4 animate-spin'/>
-                    Generating ...
+                      <Loader2 className="size-4 animate-spin" />
+                      Generating ...
                     </>
                   ) : (
                     <>
-                      <Sparkles className='mr-2 h-4 w-4' />
+                      <Sparkles className="mr-2 h-4 w-4" />
                       Generate
                     </>
                   )}

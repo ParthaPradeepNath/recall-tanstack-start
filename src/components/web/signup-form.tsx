@@ -160,7 +160,8 @@ export function SignupForm() {
             <FieldGroup>
               <Field>
                 <Button disabled={isPending} type="submit">
-                  {isPending ? 'Creating...' : 'Create Account'}</Button>
+                  {isPending ? 'Creating...' : 'Create Account'}
+                </Button>
                 <FieldDescription className="px-6 text-center">
                   Already have an account? <Link to="/login">Sign in</Link>
                 </FieldDescription>

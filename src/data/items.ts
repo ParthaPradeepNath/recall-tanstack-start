@@ -1,12 +1,13 @@
 import { prisma } from '#/db'
 import { firecrawl } from '#/lib/firecrawl'
-import { bulkImportSchema, extractSchema, importSchema } from '#/schemas/import'
+import { bulkImportSchema, extractSchema, importSchema, searchSchema } from '#/schemas/import'
 import { createServerFn } from '@tanstack/react-start'
 import z from 'zod'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { notFound } from '@tanstack/react-router'
 import { generateText } from 'ai'
 import { openrouter } from '#/lib/openRouter'
+import type { SearchResultWeb } from '@mendable/firecrawl-js'
 
 // Server Function
 export const scrapeUrlFn = createServerFn({ method: 'POST' })
@@ -184,69 +185,88 @@ export const getItemsFn = createServerFn({ method: 'GET' })
     return items
   })
 
-  export const getItemsById = createServerFn({ method: 'GET' })
+export const getItemsById = createServerFn({ method: 'GET' })
   .middleware([authFnMiddleware])
   .inputValidator(z.object({ id: z.string() }))
-  .handler(
-    async ({ data, context }) => {
-      const item = await prisma.savedItem.findUnique({
-        where: {
-          userId: context.session.user.id,
-          id: data.id,
-        }
-      })
+  .handler(async ({ data, context }) => {
+    const item = await prisma.savedItem.findUnique({
+      where: {
+        userId: context.session.user.id,
+        id: data.id,
+      },
+    })
 
-      if (!item) {
-        throw notFound()
-      }
-
-      return item
+    if (!item) {
+      throw notFound()
     }
-  )
 
-  export const saveSummaryAndGenerateTagsFn = createServerFn({
-    method: 'POST',
+    return item
   })
+
+export const saveSummaryAndGenerateTagsFn = createServerFn({
+  method: 'POST',
+})
   .middleware([authFnMiddleware])
-  .inputValidator(z.object({
-    id: z.string(),
-    summary: z.string(),
-  })
-)
-.handler(async ({context, data}) => {
-  const existing = await prisma.savedItem.findUnique({
-    where: {
-      id: data.id,
-      userId: context.session.user.id,
-    },
-  })
+  .inputValidator(
+    z.object({
+      id: z.string(),
+      summary: z.string(),
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    const existing = await prisma.savedItem.findUnique({
+      where: {
+        id: data.id,
+        userId: context.session.user.id,
+      },
+    })
 
-  if (!existing) {
-    throw notFound()
-  }
+    if (!existing) {
+      throw notFound()
+    }
 
-  const {text} = await generateText({
-    model: openrouter.chat('z-ai/glm-4.5-air:free'),
-    system: `You are a helpful assistant that extracts relevant tags from content summaries.
+    const { text } = await generateText({
+      model: openrouter.chat('z-ai/glm-4.5-air:free'),
+      system: `You are a helpful assistant that extracts relevant tags from content summaries.
     Extract 3-5 short, relevant tags that categorize the content.
     Return ONLY a comma-separated list of tags, nothing else.
     Example: technology, programming, web development, javascript`,
-    prompt: `Extract tags from the summary: \n\n${data.summary}`,
+      prompt: `Extract tags from the summary: \n\n${data.summary}`,
+    })
+
+    const tags = text
+      .split(',')
+      .map((tag) => tag.trim().toLowerCase())
+      .filter((tag) => tag.length > 0)
+      .slice(0, 5)
+
+    const item = await prisma.savedItem.update({
+      where: {
+        userId: context.session.user.id,
+        id: data.id,
+      },
+      data: {
+        summary: data.summary,
+        tags: tags,
+      },
+    })
+
+    return item
   })
 
-  const tags = text.split(',').map((tag) => tag.trim().toLowerCase()).filter((tag) => tag.length > 0)
-  .slice(0, 5)
+export const searchWebFn = createServerFn({ method: 'POST' })
+  .middleware([authFnMiddleware])
+  .inputValidator(searchSchema)
+  .handler(async ({ data}) => {
+    const result = await firecrawl.search(data.query, {
+      limit: 3,
+      location: "India",
+      tbs: "qdr:y",
+    })
 
-  const item = await prisma.savedItem.update({
-    where: {
-      userId: context.session.user.id,
-      id: data.id
-    },
-    data: {
-      summary: data.summary,
-      tags: tags,
-    }
+    return result.web?.map((item) => ({
+      url: (item as SearchResultWeb).url,
+      title: (item as SearchResultWeb).title,
+      description: (item as SearchResultWeb).description,
+    })) as SearchResultWeb[]
   })
-
-  return item
-})
