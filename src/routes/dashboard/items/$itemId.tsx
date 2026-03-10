@@ -1,22 +1,87 @@
+import { MessageResponse } from '#/components/ai-elements/message'
 import { Badge } from '#/components/ui/badge'
 import { Button, buttonVariants } from '#/components/ui/button'
 import { Card, CardContent } from '#/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#/components/ui/collapsible'
-import { getItemsById } from '#/data/items'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '#/components/ui/collapsible'
+import { getItemsById, saveSummaryAndGenerateTagsFn } from '#/data/items'
 import { cn } from '#/lib/utils'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Calendar, ChevronDown, Clock, ExternalLink, User } from 'lucide-react'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import {
+  ArrowLeft,
+  Calendar,
+  ChevronDown,
+  Clock,
+  ExternalLink,
+  Loader2,
+  Sparkles,
+  User,
+} from 'lucide-react'
 import { useState } from 'react'
+import { useCompletion } from '@ai-sdk/react'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/dashboard/items/$itemId')({
   component: RouteComponent,
   loader: ({ params }) => getItemsById({ data: { id: params.itemId } }),
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        title: loaderData?.title ?? 'Item Details',
+      },
+      {
+        property: 'og:image',
+        content: loaderData?.ogImage ?? 'lorem',
+      },
+      {
+        name: 'twitter:title',
+        content: loaderData?.title ?? 'Item Details',
+      },
+    ],
+  }),
 })
 
 function RouteComponent() {
   const data = Route.useLoaderData()
 
   const [contentOpen, setContentOpen] = useState(false)
+
+  const router = useRouter()
+
+  const { completion, complete, isLoading } = useCompletion({
+    api: '/api/ai/summary',
+    initialCompletion: data.summary ? data.summary : undefined,
+    streamProtocol: 'text',
+    body: {
+      itemId: data.id,
+    },
+    onFinish: async (_prompt, completionText) => {
+      await saveSummaryAndGenerateTagsFn({
+        data: {
+          id: data.id,
+          summary: completionText,
+        },
+      })
+
+      toast.success('Summary generated and saved!')
+      router.invalidate()
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
+  function handleGenerateSummary () {
+  if (!data.content) {
+    toast.error('No content avaiable to summary')
+    return 
+  }
+
+  complete(data.content)
+}
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 w-full">
@@ -88,25 +153,63 @@ function RouteComponent() {
         )}
 
         {/* Summary Section */}
-        <p>edtfgbj</p>
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-primary mb-3">
+                  Summary
+                </h2>
+                {completion || data.summary ? (
+                  <MessageResponse>{completion}</MessageResponse>
+                ) : (
+                  <p className="text-muted-foreground italic">
+                    {data.content
+                      ? 'No summary yet. Generate on with ai'
+                      : 'No content available to summarize'}
+                  </p>
+                )}
+              </div>
+
+              {data.content && !data.summary && (
+                <Button onClick={handleGenerateSummary} disabled={isLoading} size="sm">
+                  {isLoading ? (
+                    <>
+                    <Loader2 className='size-4 animate-spin'/>
+                    Generating ...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className='mr-2 h-4 w-4' />
+                      Generate
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Content Section */}
         {data.content && (
           <Collapsible open={contentOpen} onOpenChange={setContentOpen}>
             <CollapsibleTrigger asChild>
-              <Button value="outline" className='w-full justify-between'>
-                <span className='font-medium'>Full Content</span>
-                <ChevronDown className={cn(
-                    contentOpen ? 'rotate-180' : '', 'size-4 transition-transform duration-200'
-                )} />
+              <Button value="outline" className="w-full justify-between">
+                <span className="font-medium">Full Content</span>
+                <ChevronDown
+                  className={cn(
+                    contentOpen ? 'rotate-180' : '',
+                    'size-4 transition-transform duration-200',
+                  )}
+                />
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>
-                <Card className='mt-2'>
-                    <CardContent>
-                        {data.content}
-                    </CardContent>
-                </Card>
+              <Card className="mt-2">
+                <CardContent>
+                  <MessageResponse>{data.content}</MessageResponse>
+                </CardContent>
+              </Card>
             </CollapsibleContent>
           </Collapsible>
         )}
