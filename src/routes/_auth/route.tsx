@@ -8,16 +8,16 @@ export const Route = createFileRoute('/_auth')({
 
 function RouteComponent() {
   return (
-    <div className='min-h-screen'>
-        <div className='absolute top-8 left-8'>
-            <Link to='/' className={buttonVariants({ variant: 'secondary'})}>
-            <ArrowLeft className='size-4' />
-            Back to home
-            </Link>
-        </div>
-        <div className='flex min-h-screen items-center justify-center'>
+    <div className="min-h-screen">
+      <div className="absolute top-8 left-8">
+        <Link to="/" className={buttonVariants({ variant: 'secondary' })}>
+          <ArrowLeft className="size-4" />
+          Back to home
+        </Link>
+      </div>
+      <div className="flex min-h-screen items-center justify-center">
         <Outlet />
-        </div>
+      </div>
     </div>
   )
 }

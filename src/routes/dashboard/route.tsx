@@ -1,5 +1,9 @@
 import { Separator } from '#/components/ui/separator'
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '#/components/ui/sidebar'
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '#/components/ui/sidebar'
 import { AppSidebar } from '#/components/web/app-sidebar'
 import { getSessionFn } from '#/data/session'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
@@ -13,7 +17,7 @@ export const Route = createFileRoute('/dashboard')({
     return {
       user: session.user,
     }
-  }
+  },
 })
 
 function RouteComponent() {
@@ -31,8 +35,8 @@ function RouteComponent() {
             />
           </div>
         </header>
-        <div className='flex flex-1 flex-col gap-4 p-4'>
-            <Outlet />
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          <Outlet />
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -40,8 +40,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased wrap-anywhere selection:bg-[rgba(79,184,178,0.24)]">
-        <ThemeProvider>{children}
-          <Toaster closeButton position='top-center' />
+        <ThemeProvider>
+          {children}
+          <Toaster closeButton position="top-center" />
         </ThemeProvider>
 
         <TanStackDevtools

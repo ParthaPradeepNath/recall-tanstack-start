@@ -1,6 +1,11 @@
 import { prisma } from '#/db'
 import { firecrawl } from '#/lib/firecrawl'
-import { bulkImportSchema, extractSchema, importSchema, searchSchema } from '#/schemas/import'
+import {
+  bulkImportSchema,
+  extractSchema,
+  importSchema,
+  searchSchema,
+} from '#/schemas/import'
 import { createServerFn } from '@tanstack/react-start'
 import z from 'zod'
 import { authFnMiddleware } from '#/middlewares/auth'
@@ -93,6 +98,13 @@ export const mapUrlFn = createServerFn({ method: 'POST' })
     return result.links
   })
 
+export type BulkScrapeProgress = {
+  completed: number
+  total: number
+  url: string
+  status: 'success' | 'Failed'
+}
+
 // POST = not getting data but we want to mutate/update the data
 export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
@@ -101,7 +113,8 @@ export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
       urls: z.array(z.string().url()),
     }),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async function* ({ data, context }) {
+    const total = data.urls.length // Total items need to be imported
     for (let i = 0; i < data.urls.length; i++) {
       const url = data.urls[i] // we get the single url from the array by this i iterator
 
@@ -112,6 +125,8 @@ export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
           status: 'PENDING',
         },
       })
+
+      let status: BulkScrapeProgress['status'] = 'success'
 
       try {
         const result = await firecrawl.scrape(url, {
@@ -156,6 +171,7 @@ export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
         })
         // return updatedItem -> becaus return will break the for loop iteration cycle
       } catch {
+        status = 'Failed'
         await prisma.savedItem.update({
           where: {
             id: item.id,
@@ -165,6 +181,15 @@ export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
           },
         })
       }
+
+      const progress: BulkScrapeProgress = {
+        completed: i + 1,
+        total: total,
+        url: url,
+        status: status,
+      }
+
+      yield progress
     }
   })
 
@@ -257,11 +282,11 @@ export const saveSummaryAndGenerateTagsFn = createServerFn({
 export const searchWebFn = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
   .inputValidator(searchSchema)
-  .handler(async ({ data}) => {
+  .handler(async ({ data }) => {
     const result = await firecrawl.search(data.query, {
       limit: 3,
-      location: "India",
-      tbs: "qdr:y",
+      location: 'India',
+      tbs: 'qdr:y',
     })
 
     return result.web?.map((item) => ({

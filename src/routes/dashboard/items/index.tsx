@@ -1,6 +1,11 @@
 import { Badge } from '#/components/ui/badge'
 import { Button, buttonVariants } from '#/components/ui/button'
-import { Card, CardHeader, CardTitle } from '#/components/ui/card'
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import {
   Select,
@@ -46,9 +51,9 @@ export const Route = createFileRoute('/dashboard/items/')({
       {
         property: 'og:title',
         content: 'Saved Items',
-      }
-    ]
-  })
+      },
+    ],
+  }),
 })
 
 function ItemsGridSkeleton() {
@@ -144,15 +149,16 @@ function ItemsList({
             }}
             className="block"
           >
-
-              <div className="aspect-video w-full overflow-hidden bg-muted">
-                <img
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  src={item.ogImage ?? "https://images.unsplash.com/photo-1635776062360-af423602aff3?q=80&w=3132&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
-                  alt={item.title ?? 'Article Thumbnail'}
-                />
-              </div>
-
+            <div className="aspect-video w-full overflow-hidden bg-muted">
+              <img
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                src={
+                  item.ogImage ??
+                  'https://images.unsplash.com/photo-1635776062360-af423602aff3?q=80&w=3132&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+                }
+                alt={item.title ?? 'Article Thumbnail'}
+              />
+            </div>
 
             <CardHeader className="space-y-3 pt-4">
               <div className="flex items-center justify-between gap-2">
@@ -183,6 +189,23 @@ function ItemsList({
 
               {item.author && (
                 <p className="text-xs text-muted-foreground">{item.author}</p>
+              )}
+
+              {item.summary && (
+                <CardDescription className="line-clamp-3 text-sm">
+                  {item.summary}
+                </CardDescription>
+              )}
+
+              {/* Tags */}
+              {item.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {item.tags.slice(0, 4).map((tag, index) => (
+                    <Badge variant="secondary" key={index}>
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               )}
             </CardHeader>
           </Link>

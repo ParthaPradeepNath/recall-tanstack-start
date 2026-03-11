@@ -18,7 +18,10 @@ export const authMiddleware = createMiddleware({ type: 'request' }).server(
   async ({ next, request }) => {
     const url = new URL(request.url)
 
-    if (!url.pathname.startsWith('/dashboard') && !url.pathname.startsWith('/api')) {
+    if (
+      !url.pathname.startsWith('/dashboard') &&
+      !url.pathname.startsWith('/api/ai')
+    ) {
       return next()
     }
 

@@ -5,15 +5,15 @@ export const importSchema = z.object({
 })
 
 export const bulkImportSchema = z.object({
-    url: z.string().url(),
-    search: z.string(),
+  url: z.string().url(),
+  search: z.string(),
 })
 
 export const extractSchema = z.object({
-    author: z.string().nullable(),
-    publishedAt: z.string().nullable(),
+  author: z.string().nullable(),
+  publishedAt: z.string().nullable(),
 })
 
 export const searchSchema = z.object({
-    query: z.string().min(1),
+  query: z.string().min(1),
 })
